@@ -12,7 +12,8 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.13.0"
+    "@anthropic-ai/sdk": "^1.13.0",
+    "@google/genai": "^3.6.1"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
