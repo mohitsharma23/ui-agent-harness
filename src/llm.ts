@@ -6,22 +6,22 @@ interface LLMOptions {
   model: string;
 }
 
+interface LLMResponse {
+  reply: string;
+  usage: {
+    input_tokens: number;
+    output_tokens: number;
+  };
+  cost: number;
+  stop_reason: StopReason;
+}
+
 interface LLM {
-  complete: (options: LLMOptions) => Promise<{
-    reply: string;
-    usage: any;
-    cost: number;
-    stop_reason: StopReason;
-  }>;
+  complete: (options: LLMOptions) => Promise<LLMResponse>;
 }
 
 export class FakeLLM implements LLM {
-  async complete(options: LLMOptions): Promise<{
-    reply: string;
-    usage: any;
-    cost: number;
-    stop_reason: StopReason;
-  }> {
+  async complete(options: LLMOptions): Promise<LLMResponse> {
     const mockTokenCount = options.messages.reduce(
       (acc, msg) => acc + msg.content.split(" ").length,
       0,
@@ -29,30 +29,22 @@ export class FakeLLM implements LLM {
 
     const mockReply: string = "This is a fake response from the LLM.";
 
-    const mockCompletionTokens = mockReply.split(" ").length;
-    const totalTokens = mockTokenCount + mockCompletionTokens;
-    const mockCost = (mockTokenCount * 4 + mockCompletionTokens * 20) / 1000000;
+    const fullWords = mockReply.split(" ");
+    const fullWordCount = fullWords.length;
+    const outWords = fullWords.slice(0, options.max_tokens);
+    const truncatedReply = outWords.join(" ");
 
-    const isMaxTokensExceeded = mockCompletionTokens > options.max_tokens;
-    const truncatedReply = mockReply
-      .split(" ")
-      .slice(0, options.max_tokens)
-      .join(" ");
+    const mockCost = (mockTokenCount * 4 + outWords.length * 20) / 1000000;
+
+    const isMaxTokensExceeded = fullWordCount > options.max_tokens;
 
     return {
-      reply: isMaxTokensExceeded ? truncatedReply : mockReply,
+      reply: truncatedReply,
       usage: {
-        prompt_tokens: mockTokenCount,
-        completion_tokens: isMaxTokensExceeded
-          ? truncatedReply.split(" ").length
-          : mockCompletionTokens,
-        total_tokens: isMaxTokensExceeded
-          ? mockTokenCount + truncatedReply.split(" ").length
-          : totalTokens,
+        input_tokens: mockTokenCount,
+        output_tokens: outWords.length,
       },
-      cost: isMaxTokensExceeded
-        ? (mockTokenCount * 4 + truncatedReply.split(" ").length * 20) / 1000000
-        : mockCost,
+      cost: mockCost,
       stop_reason: isMaxTokensExceeded ? "max_tokens" : "end_turn",
     };
   }

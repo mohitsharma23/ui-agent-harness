@@ -4,7 +4,7 @@ import { FakeLLM } from "./llm";
 const client = new FakeLLM();
 
 const message = await client.complete({
-  max_tokens: 5,
+  max_tokens: 1024,
   messages: [{ role: "user", content: "Hello, Claude" }],
   model: "claude-opus-5-5",
 });
